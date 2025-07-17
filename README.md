@@ -4,6 +4,8 @@ This repository contains all necessary code and data to reproduce the simulation
 
 * Berlind, D., Cappello, L. and Madrid Padilla, O.H., (2025). "A Bayesian framework for change-point detection with uncertainty quantification." *arXiv preprint [arXiv:2507.01558](https://arxiv.org/abs/2507.01558)*.
 
+Note that an R package [mich](https://github.com/davis-berlind/mich) is also available to implement the Multiple Independent Change-Point (MICH) method described in the paper.
+
 ## Simulations
 
 The R script [simulation_functions.R](simulations/simulation_functions.R) implements the data generating processes of Simulations 1, 2, and 3 in Berlind, Cappello, and Madrid Padilla (2025), as well as functions for calculating the Hausdorff distance between any collection of estimated and true change-points and the false positive/negative sensitive location errors (see Appendix D of Berlind, Cappello, and Madrid Padilla (2025)). [Simulations](simulations) also contains the folders [meanvar_sim](simulations/meanvar_sim), [heavy_tailed_dependent_sim](simulations/heavy_tailed_dependent_sim), and [multi_sim](simulations/multi_sim), each corresponding to Simulations 1, 2, and 3. Each folder contains:
