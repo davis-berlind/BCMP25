@@ -1,3 +1,8 @@
+library(stepR)
+library(changepoint)
+library(latex2exp)
+library(mich)
+
 # read and subsample data
 ion <- read.csv("ICdata.csv")
 id <- seq(403300, 435811, 11)
@@ -12,10 +17,6 @@ par(oma = c(0,1,0,0))
 plot(x, y, type = "l", main = "",
      xlab = "Time (s)", ylab = "Conductance (nS)",
      cex.main=2, cex.lab=1.5)
-
-library(stepR)
-library(changepoint)
-library(latex2exp)
 
 png("~/ion_plot_1.png", width = 1250, height = (1250 / 2) * 3/2)
 par(mfrow = c(3,1), oma = c(0,1,0,0), mar = c(4,4,3,2))
