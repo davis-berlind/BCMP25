@@ -4,6 +4,7 @@ library(tidyverse)
 library(InspectChangepoint)
 library(L2hdchange)
 library(ecp)
+library(mich)
 
 # read in well log data
 well_log <- read.csv("~/facies_data.csv")
