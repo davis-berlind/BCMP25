@@ -4,7 +4,11 @@ library(latex2exp)
 library(mich)
 
 # read data
-y <- ion_channel$y
+ion <- read.csv("~/ICdata.csv")
+id <- seq(403300, 435811, 11)
+x <- ion$time[id]
+unit <- x[2] - x[1]
+y <- ion$data[id]
 T <- length(y)
 
 dev.off()
@@ -14,7 +18,7 @@ plot(x, y, type = "l", main = "",
      xlab = "Time (s)", ylab = "Conductance (nS)",
      cex.main=2, cex.lab=1.5)
 
-png("~/ion_plot_1.png", width = 1250, height = (1250 / 2) * 3/4)
+png("~/ion_plot_1.png", width = 1250, height = (1250 / 2))
 par(mfrow = c(3,1), oma = c(0,1,0,0), mar = c(4,4,3.5,2))
 
 #### MICH MeanVar ####
