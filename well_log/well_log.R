@@ -7,9 +7,9 @@ library(ecp)
 library(mich)
 
 # read in well log data
-well_log <- read.csv("~/facies_data.csv")
+well_log <- read.csv("./facies_data.csv")
 
-# seubst B/C Layers of shankle well
+# subset B/C Layers of shankle well
 well <- well_log %>%
   filter(grepl("(B|C)", Formation)) %>%
   filter(Well.Name == "SHANKLE") %>%
@@ -39,7 +39,7 @@ well_pivot2<- well[-1, ] %>%
                names_to = "Measurement",
                values_to = "Value")
 
-png("~/well_log.png", width = 1600, height = (6.5 / 10) * 1300)
+png("./well_log.png", width = 1600, height = (6.5 / 10) * 1300)
 well_pivot %>%
   mutate(Value_end = well_pivot2$Value,
          Depth_end = well_pivot2$Depth) %>%
@@ -62,7 +62,7 @@ well_pivot %>%
 dev.off()
 
 # fit MICH ####
-fit <- mich(well[,-c(1,2)], L_auto = TRUE, tol = 1e-10, restart = FALSE, verbose = TRUE)
+fit <- mich(well[,-c(1,2)], L_auto = TRUE, tol = 1e-3, restart = FALSE, verbose = TRUE)
 fit_rev <- mich(well[,-c(1,2)], L_auto = TRUE, tol = 1e-10, restart = FALSE, reverse = TRUE, verbose = TRUE)
 
 if (max(fit_rev$elbo) > max(fit$elbo)) fit <- fit_rev
@@ -74,7 +74,7 @@ sets <- mich_sets(fit_fast_rev$pi_bar_l, level = 0.99)$sets
 # length(est_cp[sapply(sets, function(set) min(apply(abs(outer(set, true_cp, `-`)),1,min))) <= 0])
 # length(est_cp[sapply(sets, function(set) min(apply(abs(outer(set, true_cp, `-`)),1,min))) <= 1])
 
-png("~/Desktop/mich_well_log.png", width = 1300, height = (6.5 / 10) * 1300)
+png("~/mich_well_log.png", width = 1300, height = (6.5 / 10) * 1300)
 well_pivot %>%
   mutate(Value_end = well_pivot2$Value,
          Depth_end = well_pivot2$Depth) %>%
@@ -104,7 +104,7 @@ dev.off()
 
 # fit inspect ####
 inspect_fit <- inspect(t(as.matrix(well[,-c(1,2,8)])))
-est_cp = inspect_fit$changepoints[,1]
+est_cp = inspect_fit$changepoints[,1] + 1
 sum(apply(abs(outer(est_cp, true_cp, `-`)), 2, min) <= 1)
 
 png("~/Desktop/inspect_well_log.png", width = 1300, height = (6.5 / 10) * 1300)
@@ -134,11 +134,12 @@ well_pivot %>%
 dev.off()
 
 # fit l2hdchange ####
-ts_l2_fit <- ts_hdchange(t(as.matrix(well[,-c(1,2)])))
+ts_l2_fit <- ts_hdchange(t(as.matrix(well[,-c(1,2)])), window_size = 5, N_rep = 1e5)
 l2_fit <- hdchange(ts_l2_fit)
-est_cp = l2_fit$time_stamps
+est_cp = l2_fit$time_stamps + 1
+sum(apply(abs(outer(est_cp, true_cp, `-`)), 1, min) <= 1)
 
-png("~/Desktop/l2hdc_well_log.png", width = 1300, height = (6.5 / 10) * 1300)
+png("~/l2hdc_well_log.png", width = 1300, height = (6.5 / 10) * 1300)
 well_pivot %>%
   mutate(Value_end = well_pivot2$Value,
          Depth_end = well_pivot2$Depth) %>%
@@ -146,6 +147,8 @@ well_pivot %>%
   geom_segment(aes(x = Depth, xend = Depth_end, y = Value, yend = Value_end, color = Facies), size = 4.5) +
   geom_point(aes(x = Depth, y = Value, color = Facies), size = 4) +
   scale_colour_paletteer_d("tvthemes::Bismuth") +
+  geom_vline(xintercept = 2852.5,
+             linetype = "dashed", linewidth = 1.1, color = "red", alpha = 0.6) +
   geom_vline(xintercept = well$Depth[est_cp[apply(abs(outer(est_cp, true_cp, `-`)),1,min) > 1]],
              linetype = "dashed", linewidth = 1.1, color = "black", alpha = 0.6) +
   geom_vline(xintercept =  well$Depth[est_cp[apply(abs(outer(est_cp, true_cp, `-`)),1,min) <= 1]],
@@ -166,7 +169,7 @@ dev.off()
 
 # fit ecp ####
 inspect_fit <- e.divisive(as.matrix(well[,-c(1,2)]), sig.lvl = 0.01,
-                          min.size = min_space, alpha = 2,
+                          min.size = 2, alpha = 2,
                           R=499)
 est_cp <- inspect_fit$estimates[-c(1, length(inspect_fit$estimates))]
 #sum(apply(abs(outer(est_cp, true_cp, `-`)), 2, min) <= 1)

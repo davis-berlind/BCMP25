@@ -1,4 +1,4 @@
-source("simulation_functions.R")
+source("../simulation_functions.R")
 
 # get job id and set seed
 jobid = as.integer(Sys.getenv("SGE_TASK_ID"))
@@ -85,7 +85,7 @@ for (j in 1:nrow(settings)) {
                                fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1)))
 
   #### L2HDC ####
-  time <- system.time({ts_l2_fit <- ts_hdchange(t(cp_data$Y)); fit <- hdchange(ts_l2_fit);})[3]
+  time <- system.time({ts_l2_fit <- ts_hdchange(t(cp_data$Y), window_size = min(d, sqrt(T)), N_rep = 1e5); fit <- hdchange(ts_l2_fit);})[3]
   est_cp <- fit$time_stamps + 1
 
   # estimate number of change-points
@@ -286,7 +286,7 @@ for (j in 1:nrow(settings)) {
                                fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1)))
 
   #### L2HDC ####
-  time <- system.time({ts_l2_fit <- ts_hdchange(t(cp_data$Y)); fit <- hdchange(ts_l2_fit);})[3]
+  time <- system.time({ts_l2_fit <- ts_hdchange(t(cp_data$Y), window_size = min(d, sqrt(T)), N_rep = 1e5); fit <- hdchange(ts_l2_fit);})[3]
   est_cp <- fit$time_stamps + 1
 
   # estimate number of change-points
@@ -487,7 +487,7 @@ for (j in 1:nrow(settings)) {
                                fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1)))
 
   #### L2HDC ####
-  time <- system.time({ts_l2_fit <- ts_hdchange(t(cp_data$Y)); fit <- hdchange(ts_l2_fit);})[3]
+  time <- system.time({ts_l2_fit <- ts_hdchange(t(cp_data$Y), window_size = min(d, sqrt(T)), N_rep = 1e5); fit <- hdchange(ts_l2_fit);})[3]
   est_cp <- fit$time_stamps + 1
 
   # estimate number of change-points
@@ -644,4 +644,4 @@ for (j in 1:nrow(settings)) {
                                fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1)))
 }
 
-write.csv(result, paste0("~/MICH/multi_results/result_",jobid,".csv"), row.names = FALSE)
+write.csv(result, paste0("./results/result_",jobid,".csv"), row.names = FALSE)
