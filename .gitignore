@@ -1,2 +1,5 @@
 simulations/results/*
 simulations/multi_sim/results/*
+simulations/multi_sim/output/*
+simulations/multi_sim/joblog*
+simulations/multi_sim/misses.sh
