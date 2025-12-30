@@ -64,16 +64,17 @@ plot_data$method <- factor(plot_data$method, levels = c(paste0("MICH \n (J = ", 
 rect_data$method <- factor(rect_data$method, levels = c(paste0("MICH \n (J = ", fit_mean_var$J, ")"), "H-SMUCE \n (alpha = 0.05)", "PELT"))
 change_data$method <- factor(change_data$method, levels = c(paste0("MICH \n (J = ", fit_mean_var$J, ")"), "H-SMUCE \n (alpha = 0.05)", "PELT"))
 
-png("./ion_plot_1.png", width = 1250, height = (1250 / 2))
+png("./ion_plot_1.png", width = 1000, height = 350)
 ggplot(plot_data) +
   geom_rect(data = rect_data, aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf),
             alpha = 0.5, fill = "lightblue") +
   geom_line(aes(x = x, y = y), color = "black") +
-  geom_line(aes(x = x, y = mu), color = "red", linewidth = 1.1) +
+  geom_line(aes(x = x, y = mu), color = "red", linewidth = 1) +
   geom_vline(data = change_data, aes(xintercept = x), color = "blue", linetype = "dashed") +
   facet_grid(vars(method)) +
   theme_minimal() +
-  labs(x = "Time (s)", y = "Conductance (nS)")
+  labs(x = "Time (s)", y = "Conductance (nS)") + 
+  theme(axis.title=element_text(size = 14), strip.text = element_text(size = 14))
 dev.off()
 
 png("./ion_plot_2.png", width = 1250, height = 1250 / 2)
