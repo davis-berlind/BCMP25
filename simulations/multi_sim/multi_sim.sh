@@ -5,7 +5,7 @@
 #$ -o joblog.$JOB_ID.$TASK_ID
 #$ -j y
 ## Job resource details:
-#$ -l h_rt=3:30:00,h_data=8G
+#$ -l h_rt=4:00:00,h_data=8G
 # Email address to notify
 #$ -M $USER@mail
 # Notify when
