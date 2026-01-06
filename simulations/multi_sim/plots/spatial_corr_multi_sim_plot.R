@@ -2,7 +2,7 @@ library(tidyverse)
 library(ggplot2)
 library(paletteer)
 
-results <- readRDS("multi_results.rds")
+results <- readRDS("../results/multi_results.rds")
 
 methods <- c("Inspect", "L2HDC", "ecp", "MICH Ora rev", "MICH Auto rev")
 
@@ -138,7 +138,7 @@ length_plot <- results %>%
         legend.text=element_text(size=24)) +
   labs(title = "Set Length", y = NULL, x = NULL)
 
-png("~/Desktop/corr_multi_sim_dist_plot.png", width = 1500, height = 1800)
+png("./corr_multi_sim_dist_plot.png", width = 1500, height = 1800)
 ggpubr::ggarrange(bias_plot, time_plot,
                   fpsle_plot, fnsle_plot,
                   length_plot, ccd_plot,

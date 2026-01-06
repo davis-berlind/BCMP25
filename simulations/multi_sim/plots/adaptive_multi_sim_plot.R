@@ -2,7 +2,7 @@ library(tidyverse)
 library(ggplot2)
 library(paletteer)
 
-results <- readRDS("multi_results.rds")
+results <- readRDS("../results/multi_results.rds")
 
 methods <- c("Inspect", "L2HDC", "ecp", "MICH Ora rev", "MICH Auto rev")
 
@@ -28,7 +28,7 @@ bias_plot <- results %>%
   theme(strip.background = element_rect(fill="white"),
         strip.text = element_text(size = 20),
         axis.title = element_text(size = 20),
-        axis.text = element_text(size = 20),
+        axis.text = element_text(size = 14),
         legend.position = "bottom",
         plot.title = element_text(hjust = 0.5, size=24, face="bold"),
         legend.title=element_blank(),
@@ -48,7 +48,7 @@ time_plot <- results %>%
   theme(strip.background = element_rect(fill="white"),
         strip.text = element_text(size = 20),
         axis.title = element_text(size = 20),
-        axis.text = element_text(size = 20),
+        axis.text = element_text(size = 14),
         legend.position = "bottom",
         plot.title = element_text(hjust = 0.5, size=24, face="bold"),
         legend.title=element_blank(),
@@ -68,7 +68,7 @@ fpsle_plot <- results %>%
   theme(strip.background = element_rect(fill="white"),
         strip.text = element_text(size = 20),
         axis.title = element_text(size = 20),
-        axis.text = element_text(size = 20),
+        axis.text = element_text(size = 14),
         legend.position = "bottom",
         plot.title = element_text(hjust = 0.5, size=24, face="bold"),
         legend.title=element_blank(),
@@ -88,7 +88,7 @@ fnsle_plot <- results %>%
   theme(strip.background = element_rect(fill="white"),
         strip.text = element_text(size = 20),
         axis.title = element_text(size = 20),
-        axis.text = element_text(size = 20),
+        axis.text = element_text(size = 14),
         legend.position = "bottom",
         plot.title = element_text(hjust = 0.5, size=24, face="bold"),
         legend.title=element_blank(),
@@ -110,7 +110,7 @@ ccd_plot <- results %>%
   theme(strip.background = element_rect(fill="white"),
         strip.text = element_text(size = 20),
         axis.title = element_text(size = 20),
-        axis.text = element_text(size = 20),
+        axis.text = element_text(size = 14),
         legend.position = "bottom",
         plot.title = element_text(hjust = 0.5, size=24, face="bold"),
         legend.title=element_blank(),
@@ -131,14 +131,14 @@ length_plot <- results %>%
   theme(strip.background = element_rect(fill="white"),
         strip.text = element_text(size = 20),
         axis.title = element_text(size = 20),
-        axis.text = element_text(size = 20),
+        axis.text = element_text(size = 14),
         legend.position = "bottom",
         plot.title = element_text(hjust = 0.5, size=24, face="bold"),
         legend.title=element_blank(),
         legend.text=element_text(size=24)) +
   labs(title = "Set Length", y = NULL, x = NULL)
 
-png("~/Desktop/adapt_multi_sim_dist_plot.png", width = 1500, height = 1800)
+png("./adapt_multi_sim_dist_plot.png", width = 1500, height = 1800)
 ggpubr::ggarrange(bias_plot, time_plot,
                   fpsle_plot, fnsle_plot,
                   length_plot, ccd_plot,

@@ -43,28 +43,6 @@ well_pivot2<- well[-1, ] %>%
                names_to = "Measurement",
                values_to = "Value")
 
-png("./well_log.png", width = 1600, height = (6.5 / 10) * 1300)
-well_pivot %>%
-  mutate(Value_end = well_pivot2$Value,
-         Depth_end = well_pivot2$Depth) %>%
-  ggplot() +
-  geom_segment(aes(x = Depth, xend = Depth_end, y = Value, yend = Value_end, color = Facies), size = 4.5) +
-  geom_point(aes(x = Depth, y = Value, color = Facies), size = 4) +
-  scale_colour_paletteer_d("tvthemes::Bismuth") +
-  facet_grid(rows = vars(Measurement), scales = "free_y") +
-  theme_bw() +
-  theme(strip.text = element_text(size = 20),
-        axis.title.x = element_text(size = 16),
-        axis.text.x = element_text(size = 14),
-        axis.text.y = element_text(size = 14),
-        legend.position="bottom",
-        plot.title = element_text(hjust = 0.5, size=24),
-        legend.title=element_text(size=20),
-        legend.text=element_text(size=20)) +
-  labs(title = "Lithology of Shankle Oil Well",
-       y=NULL, x = "Depth (ft)")
-dev.off()
-
 # fit MICH ####
 fit <- mich(well[,-c(1,2)], L_auto = TRUE, tol = 1e-10, restart = FALSE, verbose = TRUE)
 
@@ -80,7 +58,7 @@ sum(apply(abs(outer(unlist(sets), true_cp, `-`)), 1, min) <= 1)
 length(est_cp[sapply(sets, function(set) min(apply(abs(outer(set, true_cp, `-`)),1,min))) <= 0])
 length(est_cp[sapply(sets, function(set) min(apply(abs(outer(set, true_cp, `-`)),1,min))) <= 1])
 
-png("./mich_well_log.png", width = 1300, height = (6.5 / 17.5) * 1300)
+png("./mich_well_log.png", width = 1300, height = 500)
 well_pivot %>%
   mutate(Value_end = well_pivot2$Value,
          Depth_end = well_pivot2$Depth) %>%
@@ -94,18 +72,18 @@ well_pivot %>%
   geom_vline(xintercept =  est_cp[sapply(sets, function(set) min(apply(abs(outer(set, true_cp, `-`)),1,min))) < 1],
              linetype = "solid", linewidth = 1.25, color = "red", alpha = 0.6) +
   facet_grid(rows = vars(Measurement), scales = "free_y") +
-  theme_bw() +
-  theme(strip.text = element_text(size = 20),
+  theme_minimal() +
+  theme(strip.text = element_text(size = 14),
         axis.title.x = element_text(size = 16),
         axis.text.x = element_text(size = 14),
-        axis.text.y = element_text(size = 14),
+        axis.text.y = element_text(size = 10),
         legend.position="bottom",
         plot.title = element_text(hjust = 0.5, size=24),
         legend.title=element_text(size=20),
         legend.text=element_text(size=20)) +
   labs(title = "Lithology of Shankle Oil Well",
-       y=NULL, x = "Depth (ft)") + 
-  scale_x_continuous(breaks = seq(1, T, 40), labels = depth[seq(1, T, 40)])
+       y=NULL, x = "Depth (ft)") +
+  scale_x_continuous(breaks = seq(1, T, 40), labels = depth[seq(1, T, 40)], expand = expansion(mult = 0.01)) 
 dev.off()
 
 # fit inspect ####
@@ -120,7 +98,7 @@ fpsle(c(1,true_cp,T), c(1,est_cp,T))
 sum(apply(abs(outer(est_cp, true_cp, `-`)), 2, min) < 1)
 sum(apply(abs(outer(est_cp, true_cp, `-`)), 2, min) <= 1)
 
-png("./inspect_well_log.png", width = 1300, height = (6.5 / 10) * 1300)
+png("./inspect_well_log.png", width = 1300, height = 800)
 well_pivot %>%
   mutate(Value_end = well_pivot2$Value,
          Depth_end = well_pivot2$Depth) %>%
@@ -133,7 +111,7 @@ well_pivot %>%
   geom_vline(xintercept = est_cp[apply(abs(outer(est_cp, true_cp, `-`)),1,min) < 1],
              linetype = "solid", linewidth = 1.25, color = "red", alpha = 0.6) +
   facet_grid(rows = vars(Measurement), scales = "free_y") +
-  theme_bw() +
+  theme_minimal() +
   theme(strip.text = element_text(size = 20),
         axis.title.x = element_text(size = 16),
         axis.text.x = element_text(size = 14),
@@ -144,7 +122,7 @@ well_pivot %>%
         legend.text=element_text(size=20)) +
   labs(title = "Lithology of Shankle Oil Well",
        y=NULL, x = "Depth (ft)") + 
-  scale_x_continuous(breaks = seq(1, T, 40), labels = depth[seq(1, T, 40)])
+  scale_x_continuous(breaks = seq(1, T, 40), labels = depth[seq(1, T, 40)], expand = expansion(mult = 0.01))
 dev.off()
 
 # fit l2hdchange ####
@@ -158,7 +136,7 @@ fpsle(c(1,true_cp,T), c(1,est_cp,T))
 sum(apply(abs(outer(est_cp, true_cp, `-`)), 2, min) < 1)
 sum(apply(abs(outer(est_cp, true_cp, `-`)), 2, min) <= 1)
 
-png("./l2hdc_well_log.png", width = 1300, height = (6.5 / 10) * 1300)
+png("./l2hdc_well_log.png", width = 1300, height = 800)
 well_pivot %>%
   mutate(Value_end = well_pivot2$Value,
          Depth_end = well_pivot2$Depth) %>%
@@ -171,7 +149,7 @@ well_pivot %>%
   geom_vline(xintercept = est_cp[apply(abs(outer(est_cp, true_cp, `-`)),1,min) < 1],
              linetype = "solid", linewidth = 1.25, color = "red", alpha = 0.6) +
   facet_grid(rows = vars(Measurement), scales = "free_y") +
-  theme_bw() +
+  theme_minimal() +
   theme(strip.text = element_text(size = 20),
         axis.title.x = element_text(size = 16),
         axis.text.x = element_text(size = 14),
@@ -182,7 +160,7 @@ well_pivot %>%
         legend.text=element_text(size=20)) +
   labs(title = "Lithology of Shankle Oil Well",
        y=NULL, x = "Depth (ft)") + 
-  scale_x_continuous(breaks = seq(1, T, 40), labels = depth[seq(1, T, 40)])
+  scale_x_continuous(breaks = seq(1, T, 40), labels = depth[seq(1, T, 40)], expand = expansion(mult = 0.01))
 dev.off()
 
 # fit ecp ####
@@ -197,7 +175,7 @@ fpsle(c(1,true_cp,T), c(1,est_cp,T))
 sum(apply(abs(outer(est_cp, true_cp, `-`)), 2, min) < 1)
 sum(apply(abs(outer(est_cp, true_cp, `-`)), 2, min) <= 1)
 
-png("./ecp_well_log.png", width = 1300, height = (6.5 / 10) * 1300)
+png("./ecp_well_log.png", width = 1300, height = 800)
 well_pivot %>%
   mutate(Value_end = well_pivot2$Value,
          Depth_end = well_pivot2$Depth) %>%
@@ -210,7 +188,7 @@ well_pivot %>%
   geom_vline(xintercept =  est_cp[apply(abs(outer(est_cp, true_cp, `-`)),1,min) < 1],
              linetype = "solid", linewidth = 1.25, color = "red", alpha = 0.6) +
   facet_grid(rows = vars(Measurement), scales = "free_y") +
-  theme_bw() +
+  theme_minimal() +
   theme(strip.text = element_text(size = 20),
         axis.title.x = element_text(size = 16),
         axis.text.x = element_text(size = 14),
@@ -221,6 +199,5 @@ well_pivot %>%
         legend.text=element_text(size=20)) +
   labs(title = "Lithology of Shankle Oil Well",
        y=NULL, x = "Depth (ft)") + 
-  scale_x_continuous(breaks = seq(1, T, 40), labels = depth[seq(1, T, 40)])
+  scale_x_continuous(breaks = seq(1, T, 40), labels = depth[seq(1, T, 40)], expand = expansion(mult = 0.01))
 dev.off()
-
