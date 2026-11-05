@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=gibbs_sim
-#SBATCH --chdir=~/BCMP25/simulations/gibbs_sim/
+#SBATCH --chdir=.
 #SBATCH --output=joblog.%A.%a
 #SBATCH --error=joblog.%A.%a
 #SBATCH --time=10:00:00
@@ -14,8 +14,7 @@ echo "Job ${SLURM_ARRAY_JOB_ID}.${SLURM_ARRAY_TASK_ID} started on: $(date)"
 echo " "
 
 # load the job environment:
-. /u/local/Modules/default/init/modules.sh
-module load R/4.4.1
+module load R/4.6.1
 
 ## Simulation Parameters
 export C=10
