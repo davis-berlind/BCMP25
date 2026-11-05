@@ -1,9 +1,10 @@
 library(transport)
 source("../simulation_functions.R")
-Rcpp::sourceCpp("../mu_sample.cpp")
+Rcpp::sourceCpp("../simulation_functions.cpp")
 source("../mu_sample.R")
-Rcpp::sourceCpp("../mich_gibbs.cpp")
+Rcpp::sourceCpp("../mu_sample.cpp")
 source("../mich_gibbs.R")
+Rcpp::sourceCpp("../mich_gibbs.cpp")
 
 # load MICH functions
 library(mich)
