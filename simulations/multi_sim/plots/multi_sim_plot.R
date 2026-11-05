@@ -20,7 +20,7 @@ bias_plot <- results %>%
   ggplot(aes(x = factor(p, labels = paste0("p = ", c(0.1,0.5,1))), y = Bias, color = method, fill = method)) +
   geom_boxplot(outliers = FALSE, alpha = 0.2, fatten = 3) +
   stat_summary(fun.y="mean", geom="point", position = position_dodge(width = .75), shape = 5, size = 2.5) +
-  facet_grid(factor(d, labels = paste0("d = ", c(10,50,100))) ~ factor(L, labels = paste0("L = ", c(5,10,20))) , scales = "free") +
+  facet_grid(factor(L, labels = paste0("L = ", c(5,10,20))) ~ factor(d, labels = paste0("d = ", c(10,50,100))), scales = "free") +
   scale_shape_manual(values=c(25:21,25:24)) +
   scale_color_paletteer_d("rcartocolor::Safe") +
   scale_fill_paletteer_d("rcartocolor::Safe") +
@@ -41,7 +41,7 @@ time_plot <- results %>%
   ggplot(aes(x = factor(p, labels = paste0("p = ", c(0.1,0.5,1))), y = time, color = method, fill = method)) +
   geom_boxplot(outliers = FALSE, alpha = 0.2, fatten = 3) +
   stat_summary(fun.y="mean", geom="point", position = position_dodge(width = .75), shape = 5, size = 2.5) +
-  facet_grid(factor(d, labels = paste0("d = ", c(10,50,100))) ~ factor(L, labels = paste0("L = ", c(5,10,20))) , scales = "free") +
+  facet_grid(factor(L, labels = paste0("L = ", c(5,10,20))) ~ factor(d, labels = paste0("d = ", c(10,50,100))), scales = "free") +
   scale_color_paletteer_d("rcartocolor::Safe") +
   scale_fill_paletteer_d("rcartocolor::Safe") +
   theme_bw() +
@@ -61,7 +61,7 @@ fpsle_plot <- results %>%
   ggplot(aes(x = factor(p, labels = paste0("p = ", c(0.1,0.5,1))), y = fpsle, color = method, fill = method)) +
   geom_boxplot(outliers = FALSE, alpha = 0.2, fatten = 3) +
   stat_summary(fun.y="mean", geom="point", position = position_dodge(width = .75), shape = 5, size = 2.5) +
-  facet_grid(factor(d, labels = paste0("d = ", c(10,50,100))) ~ factor(L, labels = paste0("L = ", c(5,10,20))) , scales = "free") +
+  facet_grid(factor(L, labels = paste0("L = ", c(5,10,20))) ~ factor(d, labels = paste0("d = ", c(10,50,100))), scales = "free") +
   scale_color_paletteer_d("rcartocolor::Safe") +
   scale_fill_paletteer_d("rcartocolor::Safe") +
   theme_bw() +
@@ -81,7 +81,7 @@ fnsle_plot <- results %>%
   ggplot(aes(x = factor(p, labels = paste0("p = ", c(0.1,0.5,1))), y = fnsle, color = method, fill = method)) +
   geom_boxplot(outliers = FALSE, alpha = 0.2, fatten = 3) +
   stat_summary(fun.y="mean", geom="point", position = position_dodge(width = .75), shape = 5, size = 2.5) +
-  facet_grid(factor(d, labels = paste0("d = ", c(10,50,100))) ~ factor(L, labels = paste0("L = ", c(5,10,20))) , scales = "free") +
+  facet_grid(factor(L, labels = paste0("L = ", c(5,10,20))) ~ factor(d, labels = paste0("d = ", c(10,50,100))), scales = "free") +
   scale_color_paletteer_d("rcartocolor::Safe") +
   scale_fill_paletteer_d("rcartocolor::Safe") +
   theme_bw() +
@@ -102,7 +102,7 @@ ccd_plot <- results %>%
   ggplot(aes(x = factor(p, labels = paste0("p = ", c(0.1,0.5,1))), y = CCD, color = method, fill = method)) +
   geom_boxplot(outliers = FALSE, alpha = 0.2, fatten = 3) +
   stat_summary(fun.y="mean", geom="point", position = position_dodge(width = .75), shape = 5, size = 2.5) +
-  facet_grid(factor(d, labels = paste0("d = ", c(10,50,100))) ~ factor(L, labels = paste0("L = ", c(5,10,20))) , scales = "free") +
+  facet_grid(factor(L, labels = paste0("L = ", c(5,10,20))) ~ factor(d, labels = paste0("d = ", c(10,50,100))), scales = "free") +
   scale_fill_manual(values = c("#117733FF","#332288FF")) +
   scale_color_manual(values = c("#117733FF","#332288FF")) +
   geom_hline(aes(yintercept = alpha), linetype = "dashed") +
@@ -124,7 +124,7 @@ length_plot <- results %>%
   ggplot(aes(x = factor(p, labels = paste0("p = ", c(0.1,0.5,1))), y = set_length, color = method, fill = method)) +
   geom_boxplot(outliers = FALSE, alpha = 0.2, fatten = 3) +
   stat_summary(fun.y="mean", geom="point", position = position_dodge(width = .75), shape = 5, size = 2.5) +
-  facet_grid(factor(d, labels = paste0("d = ", c(10,50,100))) ~ factor(L, labels = paste0("L = ", c(5,10,20))) , scales = "free") +
+  facet_grid(factor(L, labels = paste0("L = ", c(5,10,20))) ~ factor(d, labels = paste0("d = ", c(10,50,100))), scales = "free") +
   scale_fill_manual(values = c("#117733FF","#332288FF")) +
   scale_color_manual(values = c("#117733FF","#332288FF")) +
   theme_bw() +

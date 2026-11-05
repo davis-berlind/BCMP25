@@ -21,9 +21,14 @@ echo " "
 . /u/local/Modules/default/init/modules.sh
 module load R/4.2.2
 
+## Simulation Parameters
+export C=10
+export RHO=0
+export ADAPT='FALSE'
+
 ## Run code 
-echo '/usr/bin/time -v Rscript ./multi_simulation_batch_job.R > ./output/output.$SGE_TASK_ID 2>&1' 
-/usr/bin/time -v Rscript ./multi_simulation_batch_job.R > ./output/output.$SGE_TASK_ID 2>&1
+echo '/usr/bin/time -v Rscript ./multi_simulation_batch_job.R > ./output/output.C$C.rho$RHO.adapt$ADAPT.j$SGE_TASK_ID 2>&1' 
+/usr/bin/time -v Rscript ./multi_simulation_batch_job.R > ./output/output.C$C.rho$RHO.adapt$ADAPT.j$SGE_TASK_ID 2>&1
 
 # echo job info on joblog:
 echo "Job $JOB_ID.$SGE_TASK_ID ended on:   " `hostname -s`

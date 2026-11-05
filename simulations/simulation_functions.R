@@ -197,7 +197,7 @@ multi_simulation <- function(T, K, d, p, rho, C, min_space, adapt) {
 #'
 #' @description
 #' Calculates the FPSLE for a set of estimated and true change-points (see
-#' equation D.2 in Berlind, Cappello, and Madrid Padilla (2025))
+#' equation D.2 in Berlind, Cappello, and Madrid Padilla 2025)
 #'
 #' @param true_cp An integer vector. Locations of the true change-points.
 #' @param est_cp An integer vector. Locations of the estimated change-points.
@@ -232,16 +232,54 @@ fnsle <- function(true_cp, est_cp) {
 #' Hausdorff Statistic
 #'
 #' @description
-#' Calculates the Hausdorff distance between a set of estimated and true
-#' change-points (see equation D.1 in Berlind, Cappello, and Madrid
-#' Padilla (2025))
+#' Calculates the Hausdorff distance between two sets of estimated change-points 
+#' (see equation D.1 in Berlind, Cappello, and Madrid Padilla 2025)
 #'
-#' @param true_cp An integer vector. Locations of the true change-points.
-#' @param est_cp An integer vector. Locations of the estimated change-points.
+#' @param x,y Integer vectors. Locations of the change-points.
 #'
-#' @return A scalar. The Hausdorff distance between `true_cp` and `est_cp`.
+#' @return A scalar. The Hausdorff distance between `x` and `y`.
 #'
-hausdorff <- function(true_cp, est_cp) {
-  max(sapply(true_cp, function(x) min(abs(x - est_cp))))
+hausdorff <- function(x, y) {
+  D <- abs(outer(x, y, "-"))
+  max(
+    max(apply(D, 1, min)),
+    max(apply(D, 2, min))
+  )
 }
 
+#' Collapsed MCMC Samples
+#'
+#' @description
+#' Collapses MCMC samples of change-points into unique configurations and 
+#' calculates weight of each configuration.
+#'
+#' @param x Integer matrix. A $B \times L$ matrix of $B$ MCMC samples and the
+#' sampled locations of $L$ change-points.
+#'
+#' @return A list. A list with a matrix `x` of the unique configurations, and 
+#' `weights` the weight of each configuration.
+#'
+collapse_samples <- function(x) {
+  # Convert each row to a unique string
+  keys <- apply(x, 1, paste, collapse = ",")
+  
+  # Unique configurations
+  unique_keys <- unique(keys)
+  
+  # Index of each sample's unique configuration
+  idx <- match(keys, unique_keys)
+  
+  # First occurrence of each configuration
+  first <- match(unique_keys, keys)
+  
+  # Unique change-point configurations
+  x_unique <- x[first, , drop = FALSE]
+  
+  # Empirical probability of each configuration
+  weights <- tabulate(idx, nbins = length(unique_keys)) / nrow(x)
+  
+  list(
+    x = x_unique,
+    weights = weights
+  )
+}

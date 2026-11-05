@@ -21,9 +21,14 @@ echo " "
 . /u/local/Modules/default/init/modules.sh
 module load R/4.2.2
 
+## Simulation Parameters
+export FAMILY='gaussian'
+export DF=0
+export THETA=0
+
 ## Run code 
-echo '/usr/bin/time -v Rscript ~/MICH/meanvar_simulation_batch_job.R > ~/MICH/output/output.$SGE_TASK_ID 2>&1' 
-/usr/bin/time -v Rscript ~/MICH/meanvar_simulation_batch_job.R > ~/MICH/output/output.$SGE_TASK_ID 2>&1
+echo '/usr/bin/time -v Rscript ./meanvar_simulation_batch_job.R > ./output/output.f$FAMILY.df$DF.t$THETA.j$SGE_TASK_ID 2>&1' 
+/usr/bin/time -v Rscript ./meanvar_simulation_batch_job.R > ./output/output.f$FAMILY.df$DF.t$THETA.j$SGE_TASK_ID 2>&1
 
 # echo job info on joblog:
 echo "Job $JOB_ID.$SGE_TASK_ID ended on:   " `hostname -s`
