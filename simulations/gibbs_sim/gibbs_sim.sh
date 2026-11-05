@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=gibbs_sim
-#SBATCH --chdir=.
+#SBATCH --chdir=~/BCMP25/simulations/gibbs_sim/
 #SBATCH --output=joblog.%A.%a
 #SBATCH --error=joblog.%A.%a
-#SBATCH --time=04:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mem=8G
 #SBATCH --mail-type=FAIL
-#SBATCH --array=1-1000
+#SBATCH --array=1-1
 
 # Echo job information
 echo "Job ${SLURM_ARRAY_JOB_ID}.${SLURM_ARRAY_TASK_ID} started on: $(hostname -s)"

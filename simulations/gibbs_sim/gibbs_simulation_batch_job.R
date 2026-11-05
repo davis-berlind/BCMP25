@@ -28,10 +28,10 @@ adapt <- as.logical(Sys.getenv("ADAPT"))
 level <- 0.9
 
 # MICH parameters
-tol <- 1e-8
+tol <- 1e-10
 prior = "var.weighted"
 log_omega <- -5.0
-null_prob <- 0.05
+null_prob <- 1e-10
 prior_prob <- c(rep((1 - null_prob) / T, T), null_prob)
 
 # Gibbs parameters
@@ -75,13 +75,7 @@ for (j in 1:nrow(settings)) {
   tau_vb_collapse <- collapse_samples(tau_vb)
   tau_gibbs_collapse <- collapse_samples(fit_gibbs$tau)
 
-  costm <- outer(
-    seq_len(length(tau_vb_collapse$weights)),
-    seq_len(length(tau_gibbs_collapse$weights)),
-    Vectorize(function(i, j) {
-      hausdorff(tau_vb_collapse$x[i, ], tau_gibbs_collapse$x[j, ])
-    })
-  )
+  costm <- matrix_hausdorff(tau_vb_collapse$x, tau_gibbs_collapse$x, sorted = TRUE)
 
   w1_tau <- wasserstein(
     tau_vb_collapse$weights,
@@ -100,26 +94,23 @@ for (j in 1:nrow(settings)) {
     prior = prior
   )
 
-  p_mu_vb <- pp(mu_vb)
-  p_mu_gibbs <- pp(fit_gibbs$mu)
+  p_mu_vb <- pp(mu_vb[,1:T])
+  p_mu_gibbs <- pp(fit_gibbs$mu[,1:T])
 
-  w2_mu <- wasserstein(p_mu_vb, p_mu_gibbs, p = 2) / sqrt(sum(cp_data$mean_signal^2))
+  w2_mu <- wasserstein(p_mu_vb, p_mu_gibbs, p = 2) / sqrt(sum(cp_data$mean_signal[,1]^2))
 
   # marginal prob distance
   marginals_vb <- apply(fit_vb$pi_bar, 1, function(x) 1 - prod(1 - x))
   marginals_gibbs <- colMeans(fit_gibbs$active)
   marginal_dist <- sqrt(sum((marginals_gibbs - marginals_vb)^2))
-
-  result <- rbind(
-    result,
-    c(C, L, d, p, rho, adapt, time_vb, time_gibbs, w1_tau, w2_mu, marginal_dist)
-  )
+  
+  result[j,] <- c(C, L, d, p, rho, adapt, time_vb, time_gibbs, w1_tau, w2_mu, marginal_dist)
 }
 
 write.csv(
   result,
-  paste0("./results/result_",
-         "C_", C, "rho_", rho, "adapt_", adapt, "j_",jobid,
-         ".csv"),
+  paste0(
+    "./results/result_","C_",C,"rho_",rho,"adapt_",adapt,"j_",jobid,".csv"
+  ),
   row.names = FALSE
 )
