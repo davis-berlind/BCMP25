@@ -41,7 +41,7 @@ thin <- 100
 cols <- c(
   "C", "L", "d", "p", "rho", "adapt", "w1_tau", "w2_mu", "marginal_dist", 
   "time_vb", "hausdorff_vb", "fpsle_vb", "fnsle_vb",
-  "time_gibbs", "hausdorff_gibbs", "fpsle_gibbs", "fnsle_gibbs",
+  "time_gibbs", "hausdorff_gibbs", "fpsle_gibbs", "fnsle_gibbs"
 )
 result <- matrix(ncol = length(cols), nrow = 0)
 result <- data.frame(result)
@@ -49,7 +49,7 @@ names(result) <- cols
 
 # check if file exists
 file_name <- paste0(
-  "./results/result_","C_",C,"rho_",rho,"adapt_",adapt,"j_",jobid,".csv"
+  "./results/result","_C_",C,"_rho_",rho,"_adapt_",adapt,"_j_",jobid,".csv"
 )
 if (file.exists(file_name)) result <- read.csv(file_name)
 start <- nrow(result)
@@ -126,5 +126,5 @@ for (j in 1:nrow(settings)) {
     time_gibbs, hausdorff(cp, cp_gibbs), fnsle(cp, cp_gibbs), fpsle(cp, cp_gibbs)
   )
 
-  write.csv(result, file_name,row.names = FALSE)
+  write.csv(result, file_name, row.names = FALSE)
 }
