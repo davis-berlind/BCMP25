@@ -49,8 +49,7 @@ double hausdorff_sorted(NumericVector x, NumericVector y) {
   
   int j = 0;
   for (int i = 0; i < x.size(); i++) {
-    while (j + 1 < y.size() &&
-           std::abs(x[i] - y[j+1]) < std::abs(x[i] - y[j])) {
+    while (j + 1 < y.size() && std::abs(x[i] - y[j+1]) <= std::abs(x[i] - y[j])) {
       j++;
     }
     max_dist = std::max(max_dist, std::abs(x[i] - y[j]));
@@ -58,8 +57,7 @@ double hausdorff_sorted(NumericVector x, NumericVector y) {
   
   int i = 0;
   for (int j = 0; j < y.size(); j++) {
-    while (i + 1 < x.size() &&
-           std::abs(y[j] - x[i+1]) < std::abs(y[j] - x[i])) {
+    while (i + 1 < x.size() && std::abs(y[j] - x[i+1]) <= std::abs(y[j] - x[i])) {
       i++;
     }
     max_dist = std::max(max_dist, std::abs(y[j] - x[i]));

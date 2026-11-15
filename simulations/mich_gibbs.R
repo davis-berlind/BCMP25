@@ -95,6 +95,13 @@ mich_gibbs <- function(
     for (l in 1:L) {
       result[["b"]][[l]] <- result[["b"]][[l]] %*% scale
     }
+    # Transform mean signals
+    for (t in 1:T) {
+      idx <- t + (0:(d-1)) * T
+      
+      result[["mu"]][, idx] <-
+        result[["mu"]][, idx, drop = FALSE] %*% scale
+    }
   }
   return(result)
 }

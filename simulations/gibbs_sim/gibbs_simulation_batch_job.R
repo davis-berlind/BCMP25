@@ -15,23 +15,20 @@ set.seed(jobid)
 
 # simulation parameters
 T <- 250
-min_space <- 10
+min_space <- 15
 settings <- expand.grid(
-  L = c(5, 10, 20),
-  d = c(2, 10, 50),
+  L = c(2, 5, 10),
+  d = c(5, 10),
   p = c(1)
 )
 C <- as.numeric(Sys.getenv("C"))
 rho <- as.numeric(Sys.getenv("RHO"))
 adapt <- as.logical(Sys.getenv("ADAPT"))
 
-# significance level
-level <- 0.9
-
 # MICH parameters
 tol <- 1e-10
 prior = "var.weighted"
-log_omega <- -5.0
+log_omega <- -7.0
 null_prob <- 1e-10
 prior_prob <- c(rep((1 - null_prob) / T, T), null_prob)
 
@@ -42,12 +39,20 @@ thin <- 100
 
 # initialize results matrix
 cols <- c(
-  "C", "L", "d", "p", "rho", "adapt", "time_vb", "time_gibbs",
-  "w1_tau", "w2_mu", "marginal_dist"
+  "C", "L", "d", "p", "rho", "adapt", "w1_tau", "w2_mu", "marginal_dist", 
+  "time_vb", "hausdorff_vb", "fpsle_vb", "fnsle_vb",
+  "time_gibbs", "hausdorff_gibbs", "fpsle_gibbs", "fnsle_gibbs",
 )
 result <- matrix(ncol = length(cols), nrow = 0)
 result <- data.frame(result)
 names(result) <- cols
+
+# check if file exists
+file_name <- paste0(
+  "./results/result_","C_",C,"rho_",rho,"adapt_",adapt,"j_",jobid,".csv"
+)
+if (file.exists(file_name)) result <- read.csv(file_name)
+start <- nrow(result)
 
 for (j in 1:nrow(settings)) {
   print(j)
@@ -56,11 +61,13 @@ for (j in 1:nrow(settings)) {
 
   # generate data
   cp_data <- multi_simulation(T, L, d, p, rho, C, min_space, adapt)
+  cp <- c(1, cp_data$changepoints, T+1)
+  if (j <= start) next
 
   time_vb <- system.time({
     fit_vb <- mich(
       cp_data$Y, L = L, log_omega = log_omega, pi_l = prior_prob, prior = prior,
-      max_iter = Inf, tol = tol, verbose = FALSE
+      max_iter = Inf, tol = tol, verbose = FALSE, fit_intercept = FALSE
     )
   })[3]
 
@@ -70,11 +77,14 @@ for (j in 1:nrow(settings)) {
       standardize = TRUE, verbose = FALSE
     )
   })[3]
-
+  
   # tau-Wasserstein distance
   tau_vb <- sapply(1:L, function(l) sample(1:(T+1), B, replace = TRUE, prob = fit_vb$pi_bar[,l]))
   tau_vb_collapse <- collapse_samples(tau_vb)
+  tau_vb_collapse$x <- cbind(1, tau_vb_collapse$x, T+1)
+
   tau_gibbs_collapse <- collapse_samples(fit_gibbs$tau)
+  tau_gibbs_collapse$x <- cbind(1, tau_gibbs_collapse$x, T+1)
 
   costm <- matrix_hausdorff(tau_vb_collapse$x, tau_gibbs_collapse$x, sorted = TRUE)
 
@@ -85,6 +95,11 @@ for (j in 1:nrow(settings)) {
     costm = costm
   )
 
+  # cp estimates
+  post_sets_vb <- mich_sets(fit_vb$pi_bar, alpha=0.9, detect = TRUE)
+  cp_vb <- c(1, post_sets_vb$cp, T+1)
+  cp_gibbs <- tau_gibbs_collapse$x[which.max(tau_gibbs_collapse$weights),]
+  
   # mu-Wasserstein distance
   mu_vb <- mu_sample(
     tau = tau_vb,
@@ -104,14 +119,12 @@ for (j in 1:nrow(settings)) {
   marginals_vb <- apply(fit_vb$pi_bar, 1, function(x) 1 - prod(1 - x))
   marginals_gibbs <- colMeans(fit_gibbs$active)
   marginal_dist <- sqrt(sum((marginals_gibbs - marginals_vb)^2))
-  
-  result[j,] <- c(C, L, d, p, rho, adapt, time_vb, time_gibbs, w1_tau, w2_mu, marginal_dist)
-}
 
-write.csv(
-  result,
-  paste0(
-    "./results/result_","C_",C,"rho_",rho,"adapt_",adapt,"j_",jobid,".csv"
-  ),
-  row.names = FALSE
-)
+  result[j,] <- c(
+    C, L, d, p, rho, adapt, w1_tau, w2_mu, marginal_dist,
+    time_vb, hausdorff(cp, cp_vb), fnsle(cp, cp_vb), fpsle(cp, cp_vb),
+    time_gibbs, hausdorff(cp, cp_gibbs), fnsle(cp, cp_gibbs), fpsle(cp, cp_gibbs)
+  )
+
+  write.csv(result, file_name,row.names = FALSE)
+}

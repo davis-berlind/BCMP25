@@ -33,4 +33,3 @@ echo "/usr/bin/time -v Rscript ./gibbs_simulation_batch_job.R > ./output/output.
 echo "Job ${SLURM_ARRAY_JOB_ID}.${SLURM_ARRAY_TASK_ID} ended on: $(hostname -s)"
 echo "Job ${SLURM_ARRAY_JOB_ID}.${SLURM_ARRAY_TASK_ID} ended on: $(date)"
 echo " "
-#### gibbs_sim.sh STOP ####

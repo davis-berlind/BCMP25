@@ -1,15 +1,17 @@
 source("../simulation_functions.R")
+Rcpp::sourceCpp("../simulation_functions.cpp")
 
 # change-point packages
 library(InspectChangepoint)
 library(L2hdchange)
 library(ecp)
+library(igraph)
 
 # load MICH functions
 library(mich)
 
 # get job id and set seed
-jobid = as.integer(Sys.getenv("SGE_TASK_ID"))
+jobid = as.integer(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 set.seed(jobid)
 
 # simulation parameters
@@ -30,16 +32,18 @@ level <- 0.9
 # MICH parameters
 tol <- 1e-6
 prior = "var.weighted"
-log_omega <- -5.0
-null_prob <- 0.05
+log_omega <- -7.0
+null_prob <- 1e-10
 
 # conditional detection window
 window <- floor(min(sqrt(T) / 2, 15))
 
 # initialize results matrix
 cols <- c(
-  "method", "C", "L", "d", "p", "rho", "adapt", "time","L_est", "n_detected",
-  "n_covered", "avg_len", "hausdorff", "fpsle", "fnsle"
+  "method", "C", "L", "d", "p", "rho", "adapt", 
+  "time", "L_fit", "L_est", "n_detected", "n_covered", "n_covering", 
+  "n_covering_d", "MMC", "MMC_d", "set_len", "set_len_d", 
+  "hausdorff", "fpsle", "fnsle"
 )
 result <- matrix(ncol = length(cols), nrow = 0)
 result <- data.frame(result)
@@ -67,8 +71,9 @@ for (j in 1:nrow(settings)) {
   # store results
   result[nrow(result) + 1,"method"] <- "ecp"
   result[nrow(result),-1] <- c(
-    C, L, d, p, rho, adapt, time, L_est, NA, NA, NA,
-    hausdorff(c(1, true_cp, T+1), est_cp),
+    C, L, d, p, rho, adapt, 
+    time, NA, L_est, NA, NA, NA, NA, NA, NA, NA, NA,
+    hausdorff(c(1, true_cp, T+1), c(1, est_cp, T+1)),
     fpsle(c(1, true_cp, T+1), est_cp),
     fnsle(c(1, true_cp, T+1), est_cp)
   )
@@ -90,7 +95,8 @@ for (j in 1:nrow(settings)) {
   # store results
   result[nrow(result) + 1,"method"] <- "Inspect"
   result[nrow(result),-1] <- c(
-    C, L, d, p, rho, adapt, time, L_est, NA, NA, NA,
+    C, L, d, p, rho, adapt, 
+    time, NA, L_est, NA, NA, NA, NA, NA, NA, NA, NA,
     hausdorff(c(1, true_cp, T+1), c(1, est_cp, T+1)),
     fpsle(c(1, true_cp, T+1), c(1, est_cp, T+1)),
     fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1))
@@ -109,7 +115,8 @@ for (j in 1:nrow(settings)) {
   # store results
   result[nrow(result) + 1,"method"] <- "L2HDC"
   result[nrow(result),-1] <- c(
-    C, L, d, p, rho, adapt, time, L_est, NA, NA, NA,
+    C, L, d, p, rho, adapt, 
+    time, NA, L_est, NA, NA, NA, NA, NA, NA, NA, NA,
     hausdorff(c(1, true_cp, T+1), c(1, est_cp, T+1)),
     fpsle(c(1, true_cp, T+1), c(1, est_cp, T+1)),
     fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1))
@@ -120,148 +127,382 @@ for (j in 1:nrow(settings)) {
   # fit model and time process
   time <- system.time({
     fit <- mich(
-      cp_data$Y, L_auto = TRUE, max_iter = Inf, tol = tol, restart = FALSE
+      cp_data$Y, L_auto = TRUE, max_iter = Inf, restart = FALSE, 
+      fit_intercept = TRUE, fit_scale = TRUE, standardize = TRUE,
+      tol = tol, prior = prior, log_omega = log_omega, null_prob = null_prob
     )
   })[3]
 
   # determine MICH credible sets and change-points
-  cs <- numeric(0)
-  est_cp <- numeric(0)
+  cs <- numeric(0); est_cp <- numeric(0)
+  n_covered <- 0; n_covering <- 0; n_covering_d <- 0; MMC <- 0; MMC_d <- 0;
   if (fit$L > 0) {
-    post_sets <- mich_sets(fit$pi_bar, max_length, level)
-    cs <- post_sets$sets
-    est_cp <- post_sets$cp
+    post_sets <- mich_sets(fit$pi_bar, level, detect = FALSE)
+    # map true changes to credible sets
+    A <- vapply(post_sets$sets, function(s) true_cp %in% s, logical(length(true_cp)))
+    A <- matrix(A, nrow = length(true_cp)) 
+    n_covered <- sum(apply(A, 1, max)) # number of changes covered
+    n_covering <- sum(apply(A, 2, max)) # number of sets covering change
+    g <- graph_from_biadjacency_matrix(A)
+    MMC <- sum(!is.na(max_bipartite_match(g)$matching[seq_len(nrow(A))]))
+    
+    post_sets_detect <- mich_sets(fit$pi_bar, level, detect = TRUE)
+    est_cp <- post_sets_detect$cp
   }
 
   # estimate number of change-points
   L_est <- length(est_cp)
-
+  
   # detected true change-points
   detected <- true_cp[true_cp %in% unlist(lapply(est_cp, function(x) (x - window):(x + window)))]
   n_detected <- length(detected)
-  # number of credible sets that cover a detected change-point
-  n_covered <- ifelse(L_est == 0, 0, sum(detected %in% unlist(cs)))
+  
+  if (L_est > 0) {
+    # map true changes to credible sets
+    A <- vapply(post_sets_detect$sets, function(s) detected %in% s, logical(length(detected)))
+    A <- matrix(A, nrow = length(detected)) 
+    n_covering_d <- sum(apply(A, 2, max)) # number of sets covering change
+    g <- graph_from_biadjacency_matrix(A)
+    MMC_d <- sum(!is.na(max_bipartite_match(g)$matching[seq_len(nrow(A))]))
+  }
+  
   # average credible set length
-  avg_len <- ifelse(L_est == 0, NA, mean(sapply(cs, function(x) length(x))))
-
+  set_len <- ifelse(fit$L == 0, NA, mean(sapply(post_sets$sets, function(x) length(x))))
+  set_len_d <- ifelse(L_est == 0, NA, mean(sapply(post_sets_detect$sets, function(x) length(x))))
+  
   # store results
   result[nrow(result) + 1,"method"] <- "MICH Auto"
-  result[nrow(result),-1] <- c(L, d, p, rho, adapt, time, L_est, n_detected,
-                               n_covered, avg_len,
-                               hausdorff(c(1, true_cp, T+1), c(1, est_cp, T+1)),
-                               hausdorff(c(1, est_cp, T+1), c(1, true_cp, T+1)),
-                               fpsle(c(1, true_cp, T+1), c(1, est_cp, T+1)),
-                               fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1)))
+  result[nrow(result),-1] <- c(
+    C, L, d, p, rho, adapt, 
+    time, fit$L, L_est, n_detected, n_covered, n_covering, 
+    n_covering_d, MMC, MMC_d, set_len, set_len_d, 
+    hausdorff(c(1, true_cp, T+1), c(1, est_cp, T+1)),
+    fpsle(c(1, true_cp, T+1), c(1, est_cp, T+1)),
+    fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1))
+  )
 
   #### MICH Auto Rev ####
   # fit model and time process
-  time_rev <- time
-  time <- system.time({fit_rev <- mich(cp_data$Y, L_auto = TRUE, max_iter = Inf, tol = tol, reverse = TRUE, restart = FALSE)})[3]
-  time <- max(time, time_rev)
-  if (max(fit$elbo) < max(fit_rev$elbo)) {
-    fit <- fit_rev
-  }
-
+  time_fwd <- time
+  elbo_fwd <- max(fit$elbo)
+  time <- system.time({
+    fit <- mich(
+      cp_data$Y, L_auto = TRUE, max_iter = Inf, restart = FALSE, 
+      fit_intercept = TRUE, fit_scale = TRUE, standardize = TRUE, reverse = TRUE,
+      tol = tol, prior = prior, log_omega = log_omega, null_prob = null_prob
+    )
+  })[3]
+  
   # determine MICH credible sets and change-points
-  cs <- numeric(0)
-  est_cp <- numeric(0)
+  cs <- numeric(0); est_cp <- numeric(0)
+  n_covered <- 0; n_covering <- 0; n_covering_d <- 0; MMC <- 0; MMC_d <- 0;
   if (fit$L > 0) {
-    post_sets <- mich_sets(fit$pi_bar, max_length, level)
-    cs <- post_sets$sets
-    est_cp <- post_sets$cp
+    post_sets <- mich_sets(fit$pi_bar, level, detect = FALSE)
+    # map true changes to credible sets
+    A <- vapply(post_sets$sets, function(s) true_cp %in% s, logical(length(true_cp)))
+    A <- matrix(A, nrow = length(true_cp)) 
+    n_covered <- sum(apply(A, 1, max)) # number of changes covered
+    n_covering <- sum(apply(A, 2, max)) # number of sets covering change
+    g <- graph_from_biadjacency_matrix(A)
+    MMC <- sum(!is.na(max_bipartite_match(g)$matching[seq_len(nrow(A))]))
+    
+    post_sets_detect <- mich_sets(fit$pi_bar, level, detect = TRUE)
+    est_cp <- post_sets_detect$cp
   }
-
+  
   # estimate number of change-points
   L_est <- length(est_cp)
-
+  
   # detected true change-points
   detected <- true_cp[true_cp %in% unlist(lapply(est_cp, function(x) (x - window):(x + window)))]
   n_detected <- length(detected)
-  # number of credible sets that cover a detected change-point
-  n_covered <- ifelse(L_est == 0, 0, sum(detected %in% unlist(cs)))
+  
+  if (L_est > 0) {
+    # map true changes to credible sets
+    A <- vapply(post_sets_detect$sets, function(s) detected %in% s, logical(length(detected)))
+    A <- matrix(A, nrow = length(detected)) 
+    n_covering_d <- sum(apply(A, 2, max)) # number of sets covering change
+    g <- graph_from_biadjacency_matrix(A)
+    MMC_d <- sum(!is.na(max_bipartite_match(g)$matching[seq_len(nrow(A))]))
+  }
+  
   # average credible set length
-  avg_len <- ifelse(L_est == 0, NA, mean(sapply(cs, function(x) length(x))))
-
+  set_len <- ifelse(fit$L == 0, NA, mean(sapply(post_sets$sets, function(x) length(x))))
+  set_len_d <- ifelse(L_est == 0, NA, mean(sapply(post_sets_detect$sets, function(x) length(x))))
+  
   # store results
   result[nrow(result) + 1,"method"] <- "MICH Auto rev"
-  result[nrow(result),-1] <- c(L, d, p, rho, adapt, time, L_est, n_detected,
-                               n_covered, avg_len,
-                               hausdorff(c(1, true_cp, T+1), c(1, est_cp, T+1)),
-                               hausdorff(c(1, est_cp, T+1), c(1, true_cp, T+1)),
-                               fpsle(c(1, true_cp, T+1), c(1, est_cp, T+1)),
-                               fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1)))
-
+  result[nrow(result),-1] <- c(
+    C, L, d, p, rho, adapt, 
+    time, fit$L, L_est, n_detected, n_covered, n_covering, 
+    n_covering_d, MMC, MMC_d, set_len, set_len_d, 
+    hausdorff(c(1, true_cp, T+1), c(1, est_cp, T+1)),
+    fpsle(c(1, true_cp, T+1), c(1, est_cp, T+1)),
+    fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1))
+  )
+  
+  #### MICH Auto best ####
+  result[nrow(result) + 1,"method"] <- "MICH Auto Best"
+  if (elbo_fwd > max(fit$elbo)) {
+    result[nrow(result),-1] <- result[nrow(result)-2,-1]
+  } else {
+    result[nrow(result),-1] <- result[nrow(result)-1,-1]
+  }
+  result[nrow(result),"time"] <- max(time_fwd, time)
+  
   #### MICH Oracle ####
   # fit model and time process
-  time <- system.time({fit <- mich(cp_data$Y, L = L, max_iter = Inf, tol = tol)})[3]
-
+  time <- system.time({
+    fit <- mich(
+      cp_data$Y, L = L, max_iter = Inf, restart = FALSE, 
+      fit_intercept = TRUE, fit_scale = TRUE, standardize = TRUE,
+      tol = tol, prior = prior, log_omega = log_omega, null_prob = null_prob
+    )
+  })[3]
+  
   # determine MICH credible sets and change-points
-  cs <- numeric(0)
-  est_cp <- numeric(0)
+  cs <- numeric(0); est_cp <- numeric(0)
+  n_covered <- 0; n_covering <- 0; n_covering_d <- 0; MMC <- 0; MMC_d <- 0;
   if (fit$L > 0) {
-    post_sets <- mich_sets(fit$pi_bar, max_length, level)
-    cs <- post_sets$sets
-    est_cp <- post_sets$cp
+    post_sets <- mich_sets(fit$pi_bar, level, detect = FALSE)
+    # map true changes to credible sets
+    A <- vapply(post_sets$sets, function(s) true_cp %in% s, logical(length(true_cp)))
+    A <- matrix(A, nrow = length(true_cp)) 
+    n_covered <- sum(apply(A, 1, max)) # number of changes covered
+    n_covering <- sum(apply(A, 2, max)) # number of sets covering change
+    g <- graph_from_biadjacency_matrix(A)
+    MMC <- sum(!is.na(max_bipartite_match(g)$matching[seq_len(nrow(A))]))
+    
+    post_sets_detect <- mich_sets(fit$pi_bar, level, detect = TRUE)
+    est_cp <- post_sets_detect$cp
   }
-
+  
   # estimate number of change-points
   L_est <- length(est_cp)
-
+  
   # detected true change-points
   detected <- true_cp[true_cp %in% unlist(lapply(est_cp, function(x) (x - window):(x + window)))]
   n_detected <- length(detected)
-  # number of credible sets that cover a detected change-point
-  n_covered <- ifelse(L_est == 0, 0, sum(detected %in% unlist(cs)))
+  
+  if (L_est > 0) {
+    # map true changes to credible sets
+    A <- vapply(post_sets_detect$sets, function(s) detected %in% s, logical(length(detected)))
+    A <- matrix(A, nrow = length(detected)) 
+    n_covering_d <- sum(apply(A, 2, max)) # number of sets covering change
+    g <- graph_from_biadjacency_matrix(A)
+    MMC_d <- sum(!is.na(max_bipartite_match(g)$matching[seq_len(nrow(A))]))
+  }
+  
   # average credible set length
-  avg_len <- ifelse(L_est == 0, NA, mean(sapply(cs, function(x) length(x))))
-
+  set_len <- ifelse(fit$L == 0, NA, mean(sapply(post_sets$sets, function(x) length(x))))
+  set_len_d <- ifelse(L_est == 0, NA, mean(sapply(post_sets_detect$sets, function(x) length(x))))
+  
   # store results
   result[nrow(result) + 1,"method"] <- "MICH Ora"
-  result[nrow(result),-1] <- c(L, d, p, rho, adapt, time, L_est, n_detected,
-                               n_covered, avg_len,
-                               hausdorff(c(1, true_cp, T+1), c(1, est_cp, T+1)),
-                               hausdorff(c(1, est_cp, T+1), c(1, true_cp, T+1)),
-                               fpsle(c(1, true_cp, T+1), c(1, est_cp, T+1)),
-                               fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1)))
+  result[nrow(result),-1] <- c(
+    C, L, d, p, rho, adapt, 
+    time, fit$L, L_est, n_detected, n_covered, n_covering, 
+    n_covering_d, MMC, MMC_d, set_len, set_len_d, 
+    hausdorff(c(1, true_cp, T+1), c(1, est_cp, T+1)),
+    fpsle(c(1, true_cp, T+1), c(1, est_cp, T+1)),
+    fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1))
+  )
 
   #### MICH Ora Rev ####
   # fit model and time process
-  time_rev <- time
-  time <- system.time({fit_rev <- mich(cp_data$Y, L = L, max_iter = Inf, reverse = TRUE, tol = tol)})[3]
-  time <- max(time, time_rev)
-  if (max(fit$elbo) < max(fit_rev$elbo)) {
-    fit <- fit_rev
-  }
-
+  time_fwd <- time
+  elbo_fwd <- max(fit$elbo)
+  time <- system.time({
+    fit <- mich(
+      cp_data$Y, L = L, max_iter = Inf, restart = FALSE, 
+      fit_intercept = TRUE, fit_scale = TRUE, standardize = TRUE, reverse = TRUE,
+      tol = tol, prior = prior, log_omega = log_omega, null_prob = null_prob
+    )
+  })[3]
+  
   # determine MICH credible sets and change-points
-  cs <- numeric(0)
-  est_cp <- numeric(0)
+  cs <- numeric(0); est_cp <- numeric(0)
+  n_covered <- 0; n_covering <- 0; n_covering_d <- 0; MMC <- 0; MMC_d <- 0;
   if (fit$L > 0) {
-    post_sets <- mich_sets(fit$pi_bar, max_length, level)
-    cs <- post_sets$sets
-    est_cp <- post_sets$cp
+    post_sets <- mich_sets(fit$pi_bar, level, detect = FALSE)
+    # map true changes to credible sets
+    A <- vapply(post_sets$sets, function(s) true_cp %in% s, logical(length(true_cp)))
+    A <- matrix(A, nrow = length(true_cp)) 
+    n_covered <- sum(apply(A, 1, max)) # number of changes covered
+    n_covering <- sum(apply(A, 2, max)) # number of sets covering change
+    g <- graph_from_biadjacency_matrix(A)
+    MMC <- sum(!is.na(max_bipartite_match(g)$matching[seq_len(nrow(A))]))
+    
+    post_sets_detect <- mich_sets(fit$pi_bar, level, detect = TRUE)
+    est_cp <- post_sets_detect$cp
   }
-
+  
   # estimate number of change-points
   L_est <- length(est_cp)
-
+  
   # detected true change-points
   detected <- true_cp[true_cp %in% unlist(lapply(est_cp, function(x) (x - window):(x + window)))]
   n_detected <- length(detected)
-  # number of credible sets that cover a detected change-point
-  n_covered <- ifelse(L_est == 0, 0, sum(detected %in% unlist(cs)))
+  
+  if (L_est > 0) {
+    # map true changes to credible sets
+    A <- vapply(post_sets_detect$sets, function(s) detected %in% s, logical(length(detected)))
+    A <- matrix(A, nrow = length(detected)) 
+    n_covering_d <- sum(apply(A, 2, max)) # number of sets covering change
+    g <- graph_from_biadjacency_matrix(A)
+    MMC_d <- sum(!is.na(max_bipartite_match(g)$matching[seq_len(nrow(A))]))
+  }
+  
   # average credible set length
-  avg_len <- ifelse(L_est == 0, NA, mean(sapply(cs, function(x) length(x))))
-
+  set_len <- ifelse(fit$L == 0, NA, mean(sapply(post_sets$sets, function(x) length(x))))
+  set_len_d <- ifelse(L_est == 0, NA, mean(sapply(post_sets_detect$sets, function(x) length(x))))
+  
   # store results
   result[nrow(result) + 1,"method"] <- "MICH Ora rev"
-  result[nrow(result),-1] <- c(L, d, p, rho, adapt, time, L_est, n_detected,
-                               n_covered, avg_len,
-                               hausdorff(c(1, true_cp, T+1), c(1, est_cp, T+1)),
-                               hausdorff(c(1, est_cp, T+1), c(1, true_cp, T+1)),
-                               fpsle(c(1, true_cp, T+1), c(1, est_cp, T+1)),
-                               fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1)))
-
+  result[nrow(result),-1] <- c(
+    C, L, d, p, rho, adapt, 
+    time, fit$L, L_est, n_detected, n_covered, n_covering, 
+    n_covering_d, MMC, MMC_d, set_len, set_len_d, 
+    hausdorff(c(1, true_cp, T+1), c(1, est_cp, T+1)),
+    fpsle(c(1, true_cp, T+1), c(1, est_cp, T+1)),
+    fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1))
+  )
+  
+  #### MICH Ora best ####
+  result[nrow(result) + 1,"method"] <- "MICH Ora Best"
+  if (elbo_fwd > max(fit$elbo)) {
+    result[nrow(result),-1] <- result[nrow(result)-2,-1]
+  } else {
+    result[nrow(result),-1] <- result[nrow(result)-1,-1]
+  }
+  result[nrow(result),"time"] <- max(time_fwd, time)
+  
+  #### MICH Min Space ####
+  # fit model and time process
+  time <- system.time({
+    fit <- mich(
+      cp_data$Y, L = T %/% min_pace, max_iter = Inf, restart = FALSE, 
+      fit_intercept = TRUE, fit_scale = TRUE, standardize = TRUE,
+      tol = tol, prior = prior, log_omega = log_omega, null_prob = null_prob
+    )
+  })[3]
+  
+  # determine MICH credible sets and change-points
+  cs <- numeric(0); est_cp <- numeric(0)
+  n_covered <- 0; n_covering <- 0; n_covering_d <- 0; MMC <- 0; MMC_d <- 0;
+  if (fit$L > 0) {
+    post_sets <- mich_sets(fit$pi_bar, level, detect = FALSE)
+    # map true changes to credible sets
+    A <- vapply(post_sets$sets, function(s) true_cp %in% s, logical(length(true_cp)))
+    A <- matrix(A, nrow = length(true_cp)) 
+    n_covered <- sum(apply(A, 1, max)) # number of changes covered
+    n_covering <- sum(apply(A, 2, max)) # number of sets covering change
+    g <- graph_from_biadjacency_matrix(A)
+    MMC <- sum(!is.na(max_bipartite_match(g)$matching[seq_len(nrow(A))]))
+    
+    post_sets_detect <- mich_sets(fit$pi_bar, level, detect = TRUE)
+    est_cp <- post_sets_detect$cp
+  }
+  
+  # estimate number of change-points
+  L_est <- length(est_cp)
+  
+  # detected true change-points
+  detected <- true_cp[true_cp %in% unlist(lapply(est_cp, function(x) (x - window):(x + window)))]
+  n_detected <- length(detected)
+  
+  if (L_est > 0) {
+    # map true changes to credible sets
+    A <- vapply(post_sets_detect$sets, function(s) detected %in% s, logical(length(detected)))
+    A <- matrix(A, nrow = length(detected)) 
+    n_covering_d <- sum(apply(A, 2, max)) # number of sets covering change
+    g <- graph_from_biadjacency_matrix(A)
+    MMC_d <- sum(!is.na(max_bipartite_match(g)$matching[seq_len(nrow(A))]))
+  }
+  
+  # average credible set length
+  set_len <- ifelse(fit$L == 0, NA, mean(sapply(post_sets$sets, function(x) length(x))))
+  set_len_d <- ifelse(L_est == 0, NA, mean(sapply(post_sets_detect$sets, function(x) length(x))))
+  
+  # store results
+  result[nrow(result) + 1,"method"] <- "MICH Min Space"
+  result[nrow(result),-1] <- c(
+    C, L, d, p, rho, adapt, 
+    time, fit$L, L_est, n_detected, n_covered, n_covering, 
+    n_covering_d, MMC, MMC_d, set_len, set_len_d, 
+    hausdorff(c(1, true_cp, T+1), c(1, est_cp, T+1)),
+    fpsle(c(1, true_cp, T+1), c(1, est_cp, T+1)),
+    fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1))
+  )
+  
+  #### MICH Min Space Rev ####
+  # fit model and time process
+  time_fwd <- time
+  elbo_fwd <- max(fit$elbo)
+  time <- system.time({
+    fit <- mich(
+      cp_data$Y, L = T %/% min_pace, max_iter = Inf, restart = FALSE, 
+      fit_intercept = TRUE, fit_scale = TRUE, standardize = TRUE, reverse = TRUE,
+      tol = tol, prior = prior, log_omega = log_omega, null_prob = null_prob
+    )
+  })[3]
+  
+  # determine MICH credible sets and change-points
+  cs <- numeric(0); est_cp <- numeric(0)
+  n_covered <- 0; n_covering <- 0; n_covering_d <- 0; MMC <- 0; MMC_d <- 0;
+  if (fit$L > 0) {
+    post_sets <- mich_sets(fit$pi_bar, level, detect = FALSE)
+    # map true changes to credible sets
+    A <- vapply(post_sets$sets, function(s) true_cp %in% s, logical(length(true_cp)))
+    A <- matrix(A, nrow = length(true_cp)) 
+    n_covered <- sum(apply(A, 1, max)) # number of changes covered
+    n_covering <- sum(apply(A, 2, max)) # number of sets covering change
+    g <- graph_from_biadjacency_matrix(A)
+    MMC <- sum(!is.na(max_bipartite_match(g)$matching[seq_len(nrow(A))]))
+    
+    post_sets_detect <- mich_sets(fit$pi_bar, level, detect = TRUE)
+    est_cp <- post_sets_detect$cp
+  }
+  
+  # estimate number of change-points
+  L_est <- length(est_cp)
+  
+  # detected true change-points
+  detected <- true_cp[true_cp %in% unlist(lapply(est_cp, function(x) (x - window):(x + window)))]
+  n_detected <- length(detected)
+  
+  if (L_est > 0) {
+    # map true changes to credible sets
+    A <- vapply(post_sets_detect$sets, function(s) detected %in% s, logical(length(detected)))
+    A <- matrix(A, nrow = length(detected)) 
+    n_covering_d <- sum(apply(A, 2, max)) # number of sets covering change
+    g <- graph_from_biadjacency_matrix(A)
+    MMC_d <- sum(!is.na(max_bipartite_match(g)$matching[seq_len(nrow(A))]))
+  }
+  
+  # average credible set length
+  set_len <- ifelse(fit$L == 0, NA, mean(sapply(post_sets$sets, function(x) length(x))))
+  set_len_d <- ifelse(L_est == 0, NA, mean(sapply(post_sets_detect$sets, function(x) length(x))))
+  
+  # store results
+  result[nrow(result) + 1,"method"] <- "MICH Min Space rev"
+  result[nrow(result),-1] <- c(
+    C, L, d, p, rho, adapt, 
+    time, fit$L, L_est, n_detected, n_covered, n_covering, 
+    n_covering_d, MMC, MMC_d, set_len, set_len_d, 
+    hausdorff(c(1, true_cp, T+1), c(1, est_cp, T+1)),
+    fpsle(c(1, true_cp, T+1), c(1, est_cp, T+1)),
+    fnsle(c(1, true_cp, T+1), c(1, est_cp, T+1))
+  )
+  
+  #### MICH Ora best ####
+  result[nrow(result) + 1,"method"] <- "MICH Min Space Best"
+  if (elbo_fwd > max(fit$elbo)) {
+    result[nrow(result),-1] <- result[nrow(result)-2,-1]
+  } else {
+    result[nrow(result),-1] <- result[nrow(result)-1,-1]
+  }
+  result[nrow(result),"time"] <- max(time_fwd, time)
 }
 
 write.csv(

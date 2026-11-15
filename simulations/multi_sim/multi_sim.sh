@@ -1,37 +1,36 @@
-#### multi_sim.sh START ####
 #!/bin/bash
-#$ -cwd
-# error = Merged with joblog
-#$ -o joblog.$JOB_ID.$TASK_ID
-#$ -j y
-## Job resource details:
-#$ -l h_rt=4:00:00,h_data=8G
-# Email address to notify
-#$ -M $USER@mail
-# Notify when
-#$ -m a
-#$ -t 1-5000:1
+#SBATCH --job-name=gibbs_sim
+#SBATCH --chdir=.
+#SBATCH --output=joblog.%A.%a
+#SBATCH --error=joblog.%A.%a
+#SBATCH --time=15:00:00
+#SBATCH --mem=16G
+#SBATCH --mail-type=FAIL,ARRAY_TASKS
+#SBATCH --mail-user=dberlind@g.ucla.edu
+#SBATCH --array=1-500
 
-# echo job info on joblog:
-echo "Job $JOB_ID.$SGE_TASK_ID started on:   " `hostname -s`
-echo "Job $JOB_ID.$SGE_TASK_ID started on:   " `date `
+# Echo job information
+echo "Job ${SLURM_ARRAY_JOB_ID}.${SLURM_ARRAY_TASK_ID} started on: $(hostname -s)"
+echo "Job ${SLURM_ARRAY_JOB_ID}.${SLURM_ARRAY_TASK_ID} started on: $(date)"
 echo " "
 
 # load the job environment:
-. /u/local/Modules/default/init/modules.sh
-module load R/4.2.2
+module load R/4.6.1
 
 ## Simulation Parameters
 export C=10
 export RHO=0
 export ADAPT='FALSE'
 
-## Run code 
-echo '/usr/bin/time -v Rscript ./multi_simulation_batch_job.R > ./output/output.C$C.rho$RHO.adapt$ADAPT.j$SGE_TASK_ID 2>&1' 
-/usr/bin/time -v Rscript ./multi_simulation_batch_job.R > ./output/output.C$C.rho$RHO.adapt$ADAPT.j$SGE_TASK_ID 2>&1
+# Run code
+mkdir -p ./output
 
-# echo job info on joblog:
-echo "Job $JOB_ID.$SGE_TASK_ID ended on:   " `hostname -s`
-echo "Job $JOB_ID.$SGE_TASK_ID ended on:   " `date `
+echo "/usr/bin/time -v Rscript ./multi_simulation_batch_job.R > ./output/output.C${C}.rho${RHO}.adapt${ADAPT}.j${SLURM_ARRAY_TASK_ID} 2>&1"
+
+/usr/bin/time -v Rscript ./multi_simulation_batch_job.R \
+    > "./output/output.C${C}.rho${RHO}.adapt${ADAPT}.j${SLURM_ARRAY_TASK_ID}" 2>&1
+
+# Echo job information
+echo "Job ${SLURM_ARRAY_JOB_ID}.${SLURM_ARRAY_TASK_ID} ended on: $(hostname -s)"
+echo "Job ${SLURM_ARRAY_JOB_ID}.${SLURM_ARRAY_TASK_ID} ended on: $(date)"
 echo " "
-#### multi_sim.sh STOP ####
