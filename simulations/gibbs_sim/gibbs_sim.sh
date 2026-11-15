@@ -3,10 +3,10 @@
 #SBATCH --chdir=.
 #SBATCH --output=joblog.%A.%a
 #SBATCH --error=joblog.%A.%a
-#SBATCH --time=10:00:00
-#SBATCH --mem=8G
+#SBATCH --time=24:00:00
+#SBATCH --mem=16G
 #SBATCH --mail-type=FAIL
-#SBATCH --array=1-1
+#SBATCH --array=1-500
 
 # Echo job information
 echo "Job ${SLURM_ARRAY_JOB_ID}.${SLURM_ARRAY_TASK_ID} started on: $(hostname -s)"

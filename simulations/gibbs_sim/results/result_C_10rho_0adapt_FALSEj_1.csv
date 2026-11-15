@@ -1,0 +1,2 @@
+"C","L","d","p","rho","adapt","w1_tau","w2_mu","marginal_dist","time_vb","hausdorff_vb","fpsle_vb","fnsle_vb","time_gibbs","hausdorff_gibbs","fpsle_gibbs","fnsle_gibbs"
+10,2,5,1,0,0,0.0811,0.0998235502431137,0.10228319156788,0.00300000000000011,1,0.333333333333333,0.333333333333333,215.096,0,0,0
