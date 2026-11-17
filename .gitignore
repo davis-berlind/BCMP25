@@ -4,6 +4,10 @@ simulations/multi_sim/results/*
 simulations/multi_sim/output/*
 simulations/multi_sim/joblog*
 
+simulations/multi_sim/sensitivity_analysis/prior/results/*
+simulations/multi_sim/sensitivity_analysis/prior/output/*
+simulations/multi_sim/sensitivity_analysis/prior/joblog*
+
 simulations/gibbs_sim/results/*
 simulations/gibbs_sim/output/*
 simulations/gibbs_sim/joblog*
