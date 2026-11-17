@@ -5,10 +5,12 @@ Rcpp::sourceCpp("../simulation_functions.cpp")
 library(InspectChangepoint)
 library(L2hdchange)
 library(ecp)
-library(igraph)
 
 # load MICH functions
 library(mich)
+
+# package for calculating coverage
+library(igraph)
 
 # get job id and set seed
 jobid = as.integer(Sys.getenv("SLURM_ARRAY_TASK_ID"))

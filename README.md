@@ -10,17 +10,14 @@ The R package [mich](https://github.com/davis-berlind/mich) implements the Multi
 
 The R script [simulation_functions.R](simulations/simulation_functions.R) contains functions implementing Simulations 1 and 2 of Berlind, Cappello, and Madrid Padilla (2025). The folder [Simulations](simulations) contains the folders [meanvar_sim](simulations/meanvar_sim) and [multi_sim](simulations/multi_sim) corresponding to Simulations 1 and 2 in the paper. Each folder contains:  
 
-1. A .R simulation script that generates a single replicate of the simulation and fits each model included in the study. 
-2. A .sh bash script that submits each simulation script to a Univa Grid Engine type job scheduler (we ran our experiments on the [Hoffman2 Cluster](https://www.hoffman2.idre.ucla.edu/About/Mission-and-governance.html) at UCLA). 
-3. .R scripts that use the simulation results to generate the plots and tables in the paper.
+1. A `batch_job.R` script that generates a single replicate of the simulation and fits each model included in the study. 
+2. A `sim.sh` bash script that submits each simulation script to a Slurm type job scheduler (we ran our experiments on the [Hoffman2 Cluster](https://www.hoffman2.idre.ucla.edu/About/Mission-and-governance.html) at UCLA). 
+3. A "sensitivity_analysis" folder with corresponding scripts to run sensitivity analysis on the hyperparemeters for each simulation study.
+4. Folders plots and tables that contain scripts to generate the figures in the paper.
 
 ## Gibbs Sampler
 
 The folder [gibbs_sim](simulations/gibbs_sim) contains .R and .cpp scripts implementing the Gibbs sampler for the mulitvariate MICH model and scripts for the simulation comparing the Gibbs and variational Bayes posteriors (see Appendix S. of Berlind, Cappello, and Madrid Padilla 2025).
-
-## Sensitivity Analysis 
-
-The folder [sensitivity_analysis](sensitivity_analysis) contains .R scripts for performing the sensitivity analysis in Appendix S.7 of Berlind, Cappello, and Madrid Padilla (2025). 
 
 ## Ion Channel Data
 
