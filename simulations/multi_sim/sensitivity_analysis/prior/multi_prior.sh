@@ -23,10 +23,10 @@ export PRIOR='var.weighted'
 # Run code
 mkdir -p ./output
 
-echo "/usr/bin/time -v Rscript ./multi_prior_batch_job.R > ./output/output.C${C}.rho${RHO}.adapt${ADAPT}.j${SLURM_ARRAY_TASK_ID} 2>&1"
+echo "/usr/bin/time -v Rscript ./multi_prior_batch_job.R > ./output/output.prior${PRIOR}.j${SLURM_ARRAY_TASK_ID} 2>&1"
 
 /usr/bin/time -v Rscript ./multi_prior_batch_job.R \
-    > "./output/output.C${C}.rho${RHO}.adapt${ADAPT}.j${SLURM_ARRAY_TASK_ID}" 2>&1
+    > "./output/output.prior${PRIOR}.j${SLURM_ARRAY_TASK_ID}" 2>&1
 
 # Echo job information
 echo "Job ${SLURM_ARRAY_JOB_ID}.${SLURM_ARRAY_TASK_ID} ended on: $(hostname -s)"
