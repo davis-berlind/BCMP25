@@ -39,7 +39,8 @@ thin <- 100
 
 # initialize results matrix
 cols <- c(
-  "C", "L", "d", "p", "rho", "adapt", "w1_tau", "w2_mu", "marginal_dist", 
+  "C", "L", "d", "p", "rho", "adapt",
+  "w1_tau", "w2_mu", "mcpd", "mcpd_p", "mcpd_q",
   "time_vb", "hausdorff_vb", "fpsle_vb", "fnsle_vb",
   "time_gibbs", "hausdorff_gibbs", "fpsle_gibbs", "fnsle_gibbs"
 )
@@ -77,7 +78,7 @@ for (j in 1:nrow(settings)) {
       standardize = TRUE, verbose = FALSE
     )
   })[3]
-  
+
   # tau-Wasserstein distance
   tau_vb <- sapply(1:L, function(l) sample(1:(T+1), B, replace = TRUE, prob = fit_vb$pi_bar[,l]))
   tau_vb_collapse <- collapse_samples(tau_vb)
@@ -99,7 +100,7 @@ for (j in 1:nrow(settings)) {
   post_sets_vb <- mich_sets(fit_vb$pi_bar, alpha=0.9, detect = TRUE)
   cp_vb <- c(1, post_sets_vb$cp, T+1)
   cp_gibbs <- tau_gibbs_collapse$x[which.max(tau_gibbs_collapse$weights),]
-  
+
   # mu-Wasserstein distance
   mu_vb <- mu_sample(
     tau = tau_vb,
@@ -116,12 +117,15 @@ for (j in 1:nrow(settings)) {
   w2_mu <- wasserstein(p_mu_vb, p_mu_gibbs, p = 2) / sqrt(sum(cp_data$mean_signal[,1]^2))
 
   # marginal prob distance
+  marginals_prior <- 1 - (1 - prior_prob)^L
   marginals_vb <- apply(fit_vb$pi_bar, 1, function(x) 1 - prod(1 - x))
   marginals_gibbs <- colMeans(fit_gibbs$active)
-  marginal_dist <- sqrt(sum((marginals_gibbs - marginals_vb)^2))
+  mcpd <- sqrt(sum((marginals_gibbs - marginals_vb)^2))
+  mcpd_p <- sqrt(sum((marginals_gibbs - marginals_prior)^2))
+  mcpd_q <- sqrt(sum((marginals_vb - marginals_prior)^2))
 
   result[j,] <- c(
-    C, L, d, p, rho, adapt, w1_tau, w2_mu, marginal_dist,
+    C, L, d, p, rho, adapt, w1_tau, w2_mu, mcpd, mcpd_p, mcpd_q,
     time_vb, hausdorff(cp, cp_vb), fnsle(cp, cp_vb), fpsle(cp, cp_vb),
     time_gibbs, hausdorff(cp, cp_gibbs), fnsle(cp, cp_gibbs), fpsle(cp, cp_gibbs)
   )

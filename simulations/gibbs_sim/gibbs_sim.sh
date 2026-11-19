@@ -3,7 +3,7 @@
 #SBATCH --chdir=.
 #SBATCH --output=joblog.%A.%a
 #SBATCH --error=joblog.%A.%a
-#SBATCH --time=24:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mem=16G
 #SBATCH --mail-type=FAIL
 #SBATCH --array=1-500
