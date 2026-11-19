@@ -47,6 +47,22 @@ result <- matrix(ncol = length(cols), nrow = 0)
 result <- data.frame(result)
 names(result) <- cols
 
+# check if file exists
+file_name <- paste0("./results/result_prior_", prior, "_j_", jobid, ".csv")
+if (file.exists(file_name)) result <- read.csv(file_name)
+m <- nrow(result)
+if (m == 0) {
+  start <- 0
+} else {
+  start <- which(
+    settings$log_omega == result$log_omega[m] &
+      settings$null_prob == result$null_prob[m] &
+      settings$L == result$L[m] &
+      settings$d == result$d[m] &
+      settings$p == result$p[m]
+  )
+}
+
 for (j in 1:nrow(settings)) {
   print(j)
   # extract settings
@@ -57,6 +73,7 @@ for (j in 1:nrow(settings)) {
   # generate data
   cp_data <- multi_simulation(T, L, d, p, rho, C, min_space, adapt)
   true_cp <- cp_data$changepoints
+  if (j <= start) next
   
   #### MICH Auto ####
   # fit model and time process
@@ -438,10 +455,7 @@ for (j in 1:nrow(settings)) {
     result[nrow(result),-1] <- result[nrow(result)-1,-1]
   }
   result[nrow(result),"time"] <- max(time_fwd, time)
+  
+  #### write result ####
+  write.csv(result, file_name, row.names = FALSE)
 }
-
-write.csv(
-  result, 
-  paste0("./results/result_", "prior_", prior, "_j_", jobid, ".csv"), 
-  row.names = FALSE
-)

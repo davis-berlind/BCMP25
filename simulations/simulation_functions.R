@@ -181,16 +181,18 @@ multi_simulation <- function(T, K, d, p, rho, C, min_space, adapt) {
     mean_signal <- rbind(mean_signal, matrix(mu[k,], nrow = blks[k], ncol = d, byrow = TRUE))
   }
 
-  Sigma <- serial_cov(d, rho = 0.9, s)
+  Sigma <- serial_cov(d, rho, s)
   Sigma_eigen <- eigen(Sigma)
 
   Y <- mean_signal + sapply(1:d, function(x) rnorm(T)) %*% Sigma_eigen$vectors %*% diag(sqrt(Sigma_eigen$values)) %*% t(Sigma_eigen$vectors)
-
-  return(list(Y = Y,
-              mu = mu,
-              Sigma = Sigma,
-              changepoints = chp,
-              mean_signal = mean_signal))
+  model <- list(
+    Y = Y,
+    mu = mu,
+    Sigma = Sigma,
+    changepoints = chp,
+    mean_signal = mean_signal
+  )
+  return(model)
 }
 
 #' False Positive Sensitive Location Error
