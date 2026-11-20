@@ -17,7 +17,7 @@ echo " "
 module load R/4.6.1
 
 ## Simulation Parameters
-export C=10
+export C=15
 export RHO=0
 export ADAPT='FALSE'
 
